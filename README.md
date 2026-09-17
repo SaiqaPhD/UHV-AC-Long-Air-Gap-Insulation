@@ -1,78 +1,55 @@
-from pathlib import Path
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
-readme = """# UHV AC Long Air Gap Insulation
+# ✅ Step 1: Load the Excel file (corrected path and filename)
+file_path = r"C:\Users\Saiqa\OneDrive - Kadir Has University\MS_Study\Semesters\Sem 3\Thesis\2024-10\10m_RodtoPlane_250us_Data\N_10mRP_22\ResultData_converted.csv"
+df = pd.read_csv(file_path)
 
-## Overview
+# ✅ Step 2: Check column names & preview data
+print(df.head())
+print(df.columns)
 
-This repository contains the research and data-analysis work carried out during my MSc thesis on **UHV AC insulation and breakdown characteristics in long rod–plane air gaps**.
+# ✅ Step 3: Select relevant columns (ensure correct column names)
+df = df[['t', 'V', 'i']]  # 't' = time, 'V' = voltage, 'i' = current
 
-The experimental work was conducted at the **State Grid Corporation of China UHV AC Test Base, Wuhan, China**. The study focused on analyzing high-speed breakdown/streamer–leader images and experimental measurements obtained from long air-gap discharge experiments.
+# ✅ Step 4: Polynomial regression on Voltage (degree 3)
+poly_v = PolynomialFeatures(degree=3)
+X_poly_v = poly_v.fit_transform(df[['t']])
+model_v = LinearRegression().fit(X_poly_v, df['V'])
+df['V_pred'] = model_v.predict(X_poly_v)
 
-## Research Work
+# ✅ Step 5: Polynomial regression on Current (degree 3)
+poly_i = PolynomialFeatures(degree=3)
+X_poly_i = poly_i.fit_transform(df[['t']])
+model_i = LinearRegression().fit(X_poly_i, df['i'])
+df['i_pred'] = model_i.predict(X_poly_i)
 
-As an MSc student, I was responsible for the research workflow, including:
+# ✅ Step 6: Optional downsampling for plotting efficiency
+df_sampled = df.iloc[::10]
 
-- Processing and analyzing raw experimental data.
-- Preprocessing high-speed breakdown images.
-- Extracting relevant discharge/arc features from experimental images.
-- Developing machine-learning pipelines for experimental-data analysis.
-- Estimating discharge characteristics from image and experimental data.
-- Evaluating model performance using statistical error and regression metrics.
-- Interpreting the experimental and machine-learning results.
+# ✅ Step 7: Plot Voltage and Current vs Time
+fig, ax1 = plt.subplots(figsize=(12, 6))
 
-## Experimental Setup
+# Voltage plot (left axis)
+ax1.scatter(df_sampled['t'], df_sampled['V'], s=5, alpha=0.4, color='blue', label="Voltage Raw")
+ax1.plot(df['t'], df['V_pred'], color='red', linewidth=2, label="Voltage Fit")
+ax1.set_xlabel("Time (µs)")
+ax1.set_ylabel("Voltage (V)", color='blue')
+ax1.tick_params(axis='y', labelcolor='blue')
+ax1.legend(loc='upper left')
 
-The main experimental configuration consisted of a **10 m rod–plane air gap** under high-voltage impulse excitation. The experiments were performed using a high-voltage impulse system at the State Grid UHV AC Test Base in Wuhan, China.
+# Current plot (right axis)
+ax2 = ax1.twinx()
+ax2.scatter(df_sampled['t'], df_sampled['i'], s=5, alpha=0.4, color='green', label="Current Raw")
+ax2.plot(df['t'], df['i_pred'], color='orange', linewidth=2, label="Current Fit")
+ax2.set_ylabel("Current (A)", color='green')
+ax2.tick_params(axis='y', labelcolor='green')
+ax2.legend(loc='upper right')
 
-## Data Processing
-
-The image-processing workflow included operations such as:
-
-1. Raw high-speed image acquisition
-2. Grayscale conversion
-3. Noise reduction / filtering
-4. Background subtraction
-5. Image normalization
-6. Image transformation and augmentation
-7. Feature extraction / preparation for machine-learning models
-
-## Machine Learning
-
-Machine-learning and deep-learning methods were developed to analyze the experimental data and estimate discharge-related parameters. The pipelines were trained and evaluated using experimentally obtained datasets.
-
-## Publications
-
-The research resulted in international conference publications, including work presented/published through IEEE conferences.
-
-### Related Publications
-
-- **Experimental Data Analysis of Positive Streamer-Leader Dynamics in Long Air Gaps Under Slow Front Impulse Voltages Using Machine Learning**
-- **Deep Learning-Based Estimation of Arc Length from High-Speed Breakdown Images in 10 m Rod-Plane Air Gap**
-
-## Repository Structure
-
-```text
-UHV-AC-Long-Air-Gap-Insulation/
-│
-├── data/
-│   ├── raw/
-│   └── processed/
-│
-├── notebooks/
-│
-├── src/
-│   ├── preprocessing/
-│   ├── machine_learning/
-│   └── analysis/
-│
-├── models/
-│
-├── figures/
-│
-├── results/
-│
-├── thesis/
-│
-├── publications/
-│
-└── README.md
+# Plot title and layout
+plt.title("Time vs Voltage (Left) and Time vs Current (Right) with Polynomial Regression [250us]")
+plt.tight_layout()
+plt.show()
